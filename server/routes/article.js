@@ -3,8 +3,7 @@ const express = require('express')
 const router = express.Router()
 const db = require('./../models/db')
 const moment = require('moment')
-const article = db.article,
-    categoryArticle = db.articleCategory
+const article = db.article
 //连接MongoDB数据库
 mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://127.0.0.1:27017/blog', {
@@ -50,24 +49,35 @@ router.get('/getArticleList', async (req, res, next) => {
         console.log(err)
         res.json({
             status: '0',
-            msg: '服务器出错'
+            msg: '服务器出错',
+            result: ''
         })
     }
 })
+// 类别管理
 // 发表文章页面,获取类别标签
 router.get('/getArticleCategory', (req, res) => {
     try {
-        let categoryModel = categoryArticle.distinct('category')
-        categoryModel.exec((err,doc) => {
-            res.json({
-                status: '1',
-                msg: doc
+        // let categoryModel = articleCategory.distinct('category')
+        article.aggregate(
+            {
+                $group: {
+                    _id: '$category',
+                    count: {$sum: 1}
+                }
+            }, (err, doc) => {
+                res.json({
+                    status: '1',
+                    msg: '',
+                    result: doc
+                })
             })
-        })
+
     } catch (err) {
         res.json({
             status: '0',
-            msg: '服务器出错'
+            msg: '服务器出错',
+            result: ''
         })
 
     }
@@ -85,21 +95,12 @@ router.post('/saveArticle', (req,res) => {
             draft: body.draft
         }
         new article(data).save((err, item) => {
-            // 获取文章id
-            let articleId = item._id
-
-            // 保存分类标签
-            let categoryData = {
-                articleId: articleId,
-                category: body.category
-            }
-            new categoryArticle(categoryData).save((err, item) => {
-                console.log('保存成功')
-                res.json({
-                    status: '1',
-                    msg: '保存成功'
-                })
+            res.json({
+                status: '1',
+                msg: '保存成功'
             })
+            // 获取文章id
+            // let articleId = item._id
         })
     } catch (err) {
         console.log('express err', err)

@@ -19,14 +19,8 @@ const article = new mongoose.Schema({
 })
 
 
-const articleCategory = new mongoose.Schema({
-    articleId: String,
-    category: String
-})
-
 let models = {
-    article: mongoose.model('article', article),
-    articleCategory: mongoose.model('articleCategory', articleCategory)
+    article: mongoose.model('article', article)
 }
 
 module.exports = models
