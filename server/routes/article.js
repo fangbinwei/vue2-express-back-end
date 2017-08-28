@@ -53,6 +53,36 @@ router.get('/getArticleList', async (req, res, next) => {
         })
     }
 })
+// 查询文章
+router.post('/queryArticle', (req, res) => {
+    try {
+        article.findOne({_id: req.body.id}).lean().exec((err, doc) => {
+            // 时间直接不转换,用utc时间 前端DatePicker能识别
+            // doc.showCreateTime = moment(doc.createTime).format('YYYY-MM-DD HH:mm')
+            let form = {
+                title: doc.title,
+                createTime: doc.createTime,
+                abstract: doc.abstract,
+                content: doc.abstract,
+                rawContent: doc.rawContent,
+                draft: doc.rawContent,
+                category: doc.category
+            }
+            res.json({
+                status: '1',
+                msg: '查询文章成功',
+                result: form
+            })
+        })
+
+    } catch (err) {
+        res.json({
+            status: '0',
+            msg: '服务器出错',
+            result: ''
+        })
+    }
+})
 // 获取类别标签
 router.get('/getArticleCategory', (req, res) => {
     try {
@@ -75,6 +105,28 @@ router.get('/getArticleCategory', (req, res) => {
         res.json({
             status: '0',
             msg: '服务器出错',
+            result: ''
+        })
+    }
+})
+// 修改指定文章的分类
+router.post('/updateCategoryById', (req,res) => {
+    try {
+        let body = req.body
+        let id = body.id
+        let category = body.categoryAfter
+        article.findByIdAndUpdate(id, {category: category}, (err,doc) => {
+            res.json({
+                status: '1',
+                msg: '修改文章类别成功',
+                result: ''
+            })
+        })
+
+    } catch (err) {
+        res.json({
+            status: '0',
+            msg: '服务器错误,修改类别失败',
             result: ''
         })
     }
@@ -103,10 +155,11 @@ router.post('/updateCategory',(req,res) => {
         })
     }
 })
-// 提交文章
+// 提交文章\ 修改文章
 router.post('/saveArticle', (req,res) => {
     try {
         let body = req.body
+        let id = body.id
         let data = {
             createTime: body.createTime,
             title: body.title,
@@ -116,15 +169,29 @@ router.post('/saveArticle', (req,res) => {
             rawContent: body.rawContent,
             draft: body.draft
         }
-        new article(data).save((err, item) => {
-            res.json({
-                status: '1',
-                msg: '保存成功',
-                result: ''
+        //修改文章
+        if (id) {
+            console.log('id存在')
+            data.modifyTime = Date.now()
+            article.findByIdAndUpdate(id, data, (err, doc) => {
+                res.json({
+                    status: '1',
+                    msg: '修改成功',
+                    result: ''
+                })
             })
-            // 获取文章id
-            // let articleId = item._id
-        })
+            //新建文章
+        } else {
+            new article(data).save((err, doc) => {
+                res.json({
+                    status: '1',
+                    msg: '保存成功',
+                    result: ''
+                })
+                // 获取文章id
+                // let articleId = item._id
+            })
+        }
     } catch (err) {
         console.log('express err', err)
         res.json({
