@@ -18,8 +18,8 @@ router.post('/login', (req,res) => {
         userModel.exec((err,doc) => {
             if (doc.length === 1) {
                 let token = jwt.sign({
-                    // token 10小时
-                    exp: Math.floor(Date.now() / 1000) + (60 * 60 *10),
+                    // token 24小时
+                    exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24),
                     name: userName,
                     password: password
                 }, secret)
@@ -46,16 +46,16 @@ router.post('/login', (req,res) => {
         })
     }
 })
-// 退出功能
-router.post('/logout', (req, res, next) => {
-    res.cookie('userId', '', {
-        path: '/',
-        maxAge: -1
-    })
-    res.json({
-        status: '1',
-        msg: '成功退出',
-        result: ''
-    })
-})
+// 退出功能 TODO 暂时使用前端退出
+// router.post('/logout', (req, res, next) => {
+//     res.cookie('userId', '', {
+//         path: '/',
+//         maxAge: -1
+//     })
+//     res.json({
+//         status: '1',
+//         msg: '成功退出',
+//         result: ''
+//     })
+// })
 module.exports = router
