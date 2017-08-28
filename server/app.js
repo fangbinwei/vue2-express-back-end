@@ -25,18 +25,19 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-//允许跨域
-app.all('*', function(req, res, next) {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000')
-    res.header('Access-Control-Allow-Headers', 'Content-Type, access-token, Content-Length, Authorization, Accept, X-Requested-With , yourHeaderField')
-    res.header('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS')
-    next()
-})
+// 允许跨域
+// app.all('*', function(req, res, next) {
+//     res.header('Access-Control-Allow-Origin', '*')
+//     res.header('Access-Control-Allow-Headers', 'Content-Type, access-token, Content-Length, Authorization, Accept, X-Requested-With , yourHeaderField')
+//     res.header('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS')
+//     next()
+// })
 app.use((req, res, next) => {
     let token = req.headers['access-token']
-    // console.log('token', token)
     // 验证header中的token是否过期 放弃验证cookies
     // if (req.cookies['User-Token']) {
+    // console.log('cookies', req.cookies['User-Token'])
+    // console.log('token', token)
     if (token) {
         // TODO 验证token是否过期
         jwt.verify(token, secret, function (err, decoded) {
@@ -48,7 +49,7 @@ app.use((req, res, next) => {
                     result: ''
                 })
             } else {
-                console.log('token 未过期')
+                // console.log('token 未过期')
                 next()
             }
         })
