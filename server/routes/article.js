@@ -25,11 +25,22 @@ mongoose.connection.on("disconnected", function () {
 // 获取文章列表
 router.get('/getArticleList', async (req, res, next) => {
     try {
+        // 判断是来自文章列表还是草稿箱的请求
+        let draft = req.query.draft
+        console.log('draft', typeof draft, draft)
         let page = parseInt(req.query.page)
         let pageSize = parseInt(req.query.pageSize)
         let skip = (page - 1) * pageSize
         let total = await article.count()
-        let articleModel = article.find().sort({createTime: -1}).skip(skip).limit(pageSize).lean()
+
+        let articleModel
+        switch (draft) {
+            case 'yes':
+                articleModel = article.find({draft: true}).sort({createTime: -1}).skip(skip).limit(pageSize).lean()
+                break
+            case 'no':
+                articleModel = article.find({draft: false}).sort({createTime: -1}).skip(skip).limit(pageSize).lean()
+        }
         articleModel.exec((err,doc) => {
             doc.forEach((item, index, array) => {
                 item.showCreateTime = moment(item.createTime).format('YYYY-MM-DD HH:mm')
@@ -53,7 +64,7 @@ router.get('/getArticleList', async (req, res, next) => {
         })
     }
 })
-// 查询文章
+// 查询文章 要编辑文章时用到
 router.post('/queryArticle', (req, res) => {
     try {
         article.findOne({_id: req.body.id}).lean().exec((err, doc) => {
@@ -171,7 +182,7 @@ router.post('/saveArticle', (req,res) => {
         }
         //修改文章
         if (id) {
-            console.log('id存在')
+            // console.log('id存在')
             data.modifyTime = Date.now()
             article.findByIdAndUpdate(id, data, (err, doc) => {
                 res.json({
