@@ -10,7 +10,7 @@ const article = new mongoose.Schema({
     abstract: String,
     content: String,
     rawContent: String,
-    draft: String,
+    draft: Boolean,
     category: String,
     visit: {
         type: Number,
