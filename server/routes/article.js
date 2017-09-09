@@ -4,6 +4,7 @@ const router = express.Router()
 const db = require('./../models/db')
 const moment = require('moment')
 const article = db.article
+const comment = db.comment
 const jwt = require('jsonwebtoken')
 const secret = 'fang-SleepWalker'
 //连接MongoDB数据库
@@ -61,8 +62,8 @@ router.get('/getArticleListByDate', getArticleListByDate)
 router.get('/getArticleListByCate', getArticleListByCate)
 
 // 查询文章 要编辑文章时用到
-router.post('/queryArticleById', queryArticleById)
-router.post('/queryDraftArticleById', tokenMiddleware, queryDraftArticleById)
+router.get('/queryArticleById', queryArticleById)
+router.get('/queryDraftArticleById', tokenMiddleware, queryDraftArticleById)
 
 // 获取类别标签 包括 草稿的类别 暂时先不加token限制
 router.get('/getAllArticleCategory', getAllArticleCategory)
@@ -78,6 +79,10 @@ router.post('/saveArticle', tokenMiddleware, saveArticle)
 //删除文章
 router.post('/delArticle', tokenMiddleware, delArticle)
 
+// 评论
+router.post('/saveComment', saveComment)
+router.get('/getComment', getComment)
+router.get('/getAllComment', getAllComment)
 
 // queryDraftArticle getDraftArticleList
 
@@ -190,7 +195,7 @@ async function getDraftArticleList (req, res, next){
             msg: '',
             result: {
                 total: total,
-                count: doc.length,
+                // count: doc.length,
                 list: doc
             }
         })
@@ -206,7 +211,7 @@ async function getDraftArticleList (req, res, next){
 
 async function queryArticleById (req, res, next) {
     try {
-        let doc = await article.findOne({_id: req.body.id, draft: false}).lean()
+        let doc = await article.findOne({_id: req.query.id, draft: false}).lean()
         let form = {
             title: doc.title,
             createTime: doc.createTime,
@@ -233,7 +238,7 @@ async function queryArticleById (req, res, next) {
 
 async function queryDraftArticleById (req, res, next) {
     try {
-        let doc = await article.findOne({_id: req.body.id, draft: true}).lean()
+        let doc = await article.findOne({_id: req.query.id, draft: true}).lean()
         // 时间直接不转换,用utc时间 前端DatePicker能识别
         // doc.showCreateTime = moment(doc.createTime).format('YYYY-MM-DD HH:mm')
         let form = {
@@ -410,5 +415,77 @@ async function delArticle (req, res, next) {
             result: ''
         })
     }
+}
+
+// 评论
+async function saveComment(req, res) {
+    try {
+        let body = req.body
+        let commentData = {
+            articleId: body.articleId,
+            replyId: body.replyId,
+            name: body.name,
+            content: body.content
+        }
+        await new comment(commentData).save()
+        res.json({
+            status: '1',
+            msg: '评论等待审核',
+            result: ''
+        })
+
+    } catch (err) {
+        console.log('err', err)
+        res.json({
+            status: '0',
+            msg: '服务器错误,保存评论失败',
+            result: ''
+        })
+    }
+
+}
+
+async function getComment(req, res) {
+    try {
+        let doc = await comment.find({articleId: req.query.articleId}).sort({replyTime: -1})
+        let total = await comment.count({articleId: req.query.articleId})
+        res.json({
+            status: '1',
+            msg: '',
+            result: {
+                doc: doc,
+                total: total
+            }
+        })
+    } catch (err) {
+        console.log('err', err)
+        res.json({
+            status: '0',
+            msg: '服务器错误,获取评论失败',
+            result: ''
+        })
+    }
+}
+async function getAllComment(req, res) {
+    try {
+        let doc = await comment.find().sort({replyTime: -1})
+        let total = await comment.count()
+        res.json({
+            status: '1',
+            msg: '',
+            result: {
+                doc: doc,
+                total: total
+            }
+        })
+    } catch (err) {
+        console.log('err', err)
+        res.json({
+            status: '0',
+            msg: '服务器错误,获取评论失败',
+            result: ''
+        })
+    }
+
 }
 module.exports = router
