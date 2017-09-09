@@ -30,7 +30,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 //     res.header('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS')
 //     next()
 // })
-// app.use('/', index);
+app.use('/', index);
 app.use('/api', user);
 app.use('/api', article);
 
