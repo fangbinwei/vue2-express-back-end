@@ -60,6 +60,8 @@ router.get('/getDraftArticleList', tokenMiddleware, getDraftArticleList)
 router.get('/getArticleListByDate', getArticleListByDate)
 // 用于类别页
 router.get('/getArticleListByCate', getArticleListByCate)
+// 用于侧边栏, 获取文章数和分类数
+router.get('/getArticleCategoryTotal', getArticleCategoryTotal)
 
 // 查询文章 要编辑文章时用到
 router.get('/queryArticleById', queryArticleById)
@@ -100,7 +102,6 @@ async function getArticleList (req, res, next){
             doc = await article.find({draft: false}).sort({createTime: -1}).skip(skip).limit(pageSize).lean()
         }
 
-        let total = await article.count({draft: false})
         doc.forEach((item, index, array) => {
             item.showCreateTime = moment(item.createTime).format('YYYY-MM-DD HH:mm')
         })
@@ -108,8 +109,6 @@ async function getArticleList (req, res, next){
             status: '1',
             msg: '',
             result: {
-                total: total,
-                count: doc.length,
                 list: doc
             }
         })
@@ -124,7 +123,6 @@ async function getArticleList (req, res, next){
 }
 async function getArticleListByDate (req, res, next){
     try {
-        let total = await article.count({draft: false})
         let doc = await article.aggregate(
             {
                 $match: {draft: false}
@@ -144,8 +142,7 @@ async function getArticleListByDate (req, res, next){
         res.json({
             status: '1',
             msg: '',
-            result: doc,
-            total: total
+            result: doc
         })
     } catch (err) {
         res.json({
@@ -155,18 +152,44 @@ async function getArticleListByDate (req, res, next){
         })
     }
 }
+async function getArticleCategoryTotal (req, res, next) {
+    try{
+        let articleTotal = await article.count({draft: false})
+        let category =  await article.aggregate(
+            {
+              $match: {draft: false}
+            },
+            {
+                $group: {_id: '$category'}
+            }
+        )
+        let categoryTotal = category.length
+        res.json({
+            status: '1',
+            msg: '',
+            result: {
+                articleTotal,
+                categoryTotal
+            }
+        })
+    } catch (err) {
+        // console.log('err', err)
+        res.json({
+            status: 0,
+            msg: '服务器错误,查询文章/分类数量错误',
+            result: ''
+        })
+    }
+}
 async function getArticleListByCate (req, res, next){
     try {
         let reqCategory = req.query.category
         let doc = await article.find({draft: false, category: reqCategory}).sort({createTime: -1})
 
-        let total = await article.count({draft: false, category: reqCategory})
-
         res.json({
             status: '1',
             msg: '',
             result: {
-                total: total,
                 list: doc
             }
         })
