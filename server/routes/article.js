@@ -154,15 +154,10 @@ async function getArticleListByDate (req, res, next){
 }
 async function getArticleCategoryTotal (req, res, next) {
     try{
-        let articleTotal = await article.count({draft: false})
-        let category =  await article.aggregate(
-            {
-              $match: {draft: false}
-            },
-            {
-                $group: {_id: '$category'}
-            }
-        )
+        let [articleTotal, category] = await Promise.all([
+            article.count({draft: false}),
+            article.aggregate({$match: {draft: false}}, {$group: {_id: '$category'}})
+        ])
         let categoryTotal = category.length
         res.json({
             status: '1',
@@ -208,8 +203,10 @@ async function getDraftArticleList (req, res, next){
         let pageSize = parseInt(req.query.pageSize)
         let skip = (page - 1) * pageSize
 
-        let doc = await article.find({draft: true}).sort({createTime: -1}).skip(skip).limit(pageSize).lean()
-        let total = await article.count({draft: true})
+        let [doc, total] = await Promise.all([
+            article.find({draft: true}).sort({createTime: -1}).skip(skip).limit(pageSize).lean(),
+            article.count({draft: true})
+        ])
         doc.forEach((item, index, array) => {
             item.showCreateTime = moment(item.createTime).format('YYYY-MM-DD HH:mm')
         })
@@ -218,7 +215,6 @@ async function getDraftArticleList (req, res, next){
             msg: '',
             result: {
                 total: total,
-                // count: doc.length,
                 list: doc
             }
         })
@@ -470,8 +466,11 @@ async function saveComment(req, res) {
 
 async function getComment(req, res) {
     try {
-        let doc = await comment.find({articleId: req.query.articleId}).sort({replyTime: -1})
-        let total = await comment.count({articleId: req.query.articleId})
+        // TODO 以后如果评论足够多, 应该一次返回一部分评论doc, 但是total是全部评论的数量
+        let [doc, total] = await Promise.all([
+            comment.find({articleId: req.query.articleId}).sort({replyTime: -1}),
+            comment.count({articleId: req.query.articleId})
+        ])
         res.json({
             status: '1',
             msg: '',
@@ -491,8 +490,10 @@ async function getComment(req, res) {
 }
 async function getAllComment(req, res) {
     try {
-        let doc = await comment.find().sort({replyTime: -1})
-        let total = await comment.count()
+        let [doc, total] = await Promise.all([
+            comment.find().sort({replyTime: -1}),
+            comment.count()
+        ])
         res.json({
             status: '1',
             msg: '',
